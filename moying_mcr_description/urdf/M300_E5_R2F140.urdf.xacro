@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<robot name="M300_E5_R2F140" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find robotiq_2f_140_gripper_visualization)/urdf/robotiq_arg2f_140_model_macro.xacro" />
+  <xacro:include filename="$(find moying_mcr_description)/urdf/M300_E5.urdf.xacro" />
+  <xacro:include filename="$(find moying_mcr_description)/urdf/accessories/robotiq_mimic_transmission.xacro"/>
+  <xacro:include filename="$(find moying_mcr_description)/urdf/accessories/robotiq_mimic.gazebo"/>
+  
+  <xacro:robotiq_arg2f_140 prefix="robotiq_"/>
+  <xacro:robotiq_mimic_trans prefix="robotiq_"/>
+  <xacro:robotiq_mimic_gz prefix="robotiq_"/>
+      
+    <joint name="robotiq_gripper_base_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 ${-PI/8}"/>
+        <parent link="elfin_link6_mount"/>
+        <child link="robotiq_gripper_base"/>
+    </joint>
+
+    <link name="robotiq_gripper_base">
+      <inertial>
+        <mass value="0.6"/>
+        <origin rpy="0 0 0" xyz="0 0 0.03 "/>
+        <cylinder_inertia_def r="0.06" h="0.018" mass="0.6"/>
+      </inertial>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0 "/>
+        <geometry>
+          <mesh filename="package://moying_mcr_description/meshes/Gripper_base.STL"/>
+        </geometry>
+        <material name="GlassWhite"/>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://moying_mcr_description/meshes/Gripper_base.STL"/>
+        </geometry>
+      </collision>
+    </link>
+    
+    <joint name="gripper_mount" type="fixed">
+	    <origin xyz="0 0 0.011" rpy="0 0 ${PI/2}"/>
+      <parent link="robotiq_gripper_base"/>
+      <child link="robotiq_robotiq_arg2f_base_link"/>
+    </joint>
+
+</robot>

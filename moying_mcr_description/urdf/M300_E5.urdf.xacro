@@ -1,0 +1,69 @@
+<?xml version="1.0" ?>
+<robot name="M300_E5" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find moying_mor_description)/urdf/MON300.urdf.xacro" />
+  <xacro:include filename="$(find moying_mcr_description)/urdf/accessories/elfin5.urdf.xacro" />
+  <xacro:include filename="$(find moying_mcr_description)/urdf/my_car_move.urdf.xacro" />
+
+  
+  <xacro:property name="PI" value="3.1415926535898"/>
+
+    <!-- Extention shell -->
+    <joint name="extention_shell_joint" type="fixed">
+      <origin
+          xyz="0 0 0.39"
+          rpy="0 0 ${-pi/2}" />
+      <parent link="vehicle_body"/>
+      <child link="extention_shell"/>
+    </joint>
+    
+    <link name="extention_shell">
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0 "/>
+        <geometry>
+          <mesh filename="package://moying_mor_description/meshes/agv/MON600_TopCover_Basic.STL"/>
+        </geometry>
+        <material name="GlassWhite"/>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://moying_mor_description/meshes/agv/MON600_TopCover_Basic.STL"/>
+        </geometry>
+      </collision>
+    </link>
+      
+    <!-- Manipulator -->
+    <link name="pedestal_link">
+        <inertial>
+            <mass value="7"/>
+            <origin rpy="0 0 0 " xyz="0 0 0"/>
+            <cylinder_inertia_def r="0.076" h="0.33" mass="5"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.1" length="0.33"/>
+            </geometry>
+            <material name="DarkGrey"/>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <cylinder radius="0.1" length="0.33"/>
+            </geometry>
+            <material name="DarkGrey"/>
+        </collision>
+    </link>
+    <joint name="pedestal_base" type="fixed">
+        <origin xyz="0.35 0 0.555" rpy="0 0 0"/>
+        <parent link="vehicle_body"/>
+        <child link="pedestal_link"/>
+    </joint>
+
+    <joint name="arm_mount" type="fixed">
+        <origin xyz="0 0 0.165" rpy="0 0 ${-pi/2}"/>
+        <parent link="pedestal_link"/>
+        <child link="elfin_base_link"/>
+    </joint>
+    
+</robot>

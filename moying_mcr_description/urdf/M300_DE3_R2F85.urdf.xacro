@@ -1,0 +1,98 @@
+<?xml version="1.0" ?>
+<robot name="M300_DE3_R2F85" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="$(find moying_mcr_description)/urdf/M300_DE3.urdf.xacro" />
+    <xacro:include filename="$(find moying_mcr_description)/urdf/accessories/robotiq_2f_85_gripper/robotiq_arg2f_85_model_macro.xacro" />
+    <xacro:include filename="$(find robotiq_ft_sensor)/urdf/robotiq_ft300.urdf.xacro" />
+    <xacro:include filename="$(find moying_mcr_description)/urdf/accessories/robotiq_mimic_transmission.xacro"/>
+    <xacro:include filename="$(find moying_mcr_description)/urdf/accessories/robotiq_mimic.gazebo"/>
+    
+    <xacro:arg name="simulation" default="false"/>
+    
+    <xacro:property name="PI" value="3.1415926535897932"/>
+    
+    <xacro:macro name="cuboid_inertia_def" params="x y z mass">
+      <inertia iyy="${mass*(z*z+x*x)/12.0}" ixx="${mass*(y*y+z*z)/12.0}" izz="${mass*(x*x+y*y)/12.0}" ixy="0.0" iyz="0.0" ixz="0.0"/>
+    </xacro:macro>
+    
+    <xacro:macro name="cylinder_inertia_def" params="r h mass">
+      <inertia ixx="${mass*(3*r*r+h*h)/12}" ixy="0" ixz="0" iyy="${mass*(3*r*r+h*h)/12}" iyz="0" izz="${mass*r*r/2}"/>
+    </xacro:macro>
+    
+    <!-- Grippers -->
+    <!-- Left -->
+    <xacro:robotiq_arg2f_85 prefix="left_"/>
+    <xacro:robotiq_mimic_trans prefix="left_"/>
+    <xacro:robotiq_85_mimic_gz prefix="left_"/>
+
+    <joint name="left_robotiq_flange_mount" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 ${-PI/8}"/>
+        <parent link="left_arm_link6_mount"/>
+        <child link="left_gripper_base"/>
+    </joint>
+    
+    <link name="left_gripper_base">
+      <inertial>
+        <mass value="0.6"/>
+        <origin rpy="0 0 0" xyz="0 0 0.03 "/>
+        <cylinder_inertia_def r="0.06" h="0.018" mass="0.6"/>
+      </inertial>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0 "/>
+        <geometry>
+          <mesh filename="package://moying_mcr_description/meshes/Gripper_base.STL"/>
+        </geometry>
+        <material name="GlassWhite"/>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://moying_mcr_description/meshes/Gripper_base.STL"/>
+        </geometry>
+      </collision>
+    </link>
+    
+    <joint name="left_gripper_mount" type="fixed">
+	    <origin xyz="0 0 0.011" rpy="0 0 ${PI/2}"/>
+        <parent link="left_gripper_base"/>
+        <child link="left_robotiq_arg2f_base_link"/>
+    </joint>
+    
+    <!-- Right -->
+    <xacro:robotiq_arg2f_85 prefix="right_"/>
+    <xacro:robotiq_mimic_trans prefix="right_"/>
+    <xacro:robotiq_85_mimic_gz prefix="right_"/>
+    
+    <joint name="right_robotiq_flange_mount" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 ${-PI/8}"/>
+        <parent link="right_arm_link6_mount"/>
+        <child link="right_gripper_base"/>
+    </joint>
+    
+    <link name="right_gripper_base">
+      <inertial>
+        <mass value="0.6"/>
+        <origin rpy="0 0 0" xyz="0 0 0.003 "/>
+        <cylinder_inertia_def r="0.06" h="0.018" mass="0.6"/>
+      </inertial>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0 "/>
+        <geometry>
+          <mesh filename="package://moying_mcr_description/meshes/Gripper_base.STL"/>
+        </geometry>
+        <material name="GlassWhite"/>
+      </visual>
+      <collision>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="package://moying_mcr_description/meshes/Gripper_base.STL"/>
+        </geometry>
+      </collision>
+    </link>
+    
+    <joint name="right_gripper_mount" type="fixed">
+	    <origin xyz="0 0 0.011" rpy="0 0 ${PI/2}"/>
+      <parent link="right_gripper_base"/>
+      <child link="right_robotiq_arg2f_base_link"/>
+    </joint>
+      
+</robot>

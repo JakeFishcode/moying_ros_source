@@ -1,0 +1,378 @@
+<?xml version="1.0" ?>
+<robot name="MON300" 
+  xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- XACRO arguments -->
+  <xacro:arg name="wheel_joints_type" default="continuous"/>
+  
+  <!-- Included URDF/XACRO Files -->
+  <xacro:include filename="$(find moying_mor_description)/urdf/accessories/d435.urdf.xacro"/>
+  <xacro:include filename="$(find moying_mor_description)/urdf/MON300_transmission.xacro"/>
+  <!-- Config parameters -->
+  <xacro:arg name="simulation" default="true"/>
+  <xacro:property name="use_gazebo" value="$(arg simulation)"/>
+
+  <!-- Base Properties -->
+  <xacro:property name="PI" value="3.141592653589793"/>
+  <xacro:property name="pi" value="3.141592653589793"/>
+    <xacro:property name="wheel_track" value="0.31"/>
+    <xacro:property name="wheel_base" value="0.281"/>
+    <xacro:property name="wheel_offset_z" value="-0.023"/>
+  <xacro:property name="roller_type" value="simple"/>
+  
+  <xacro:property name="base_mass" value="100"/>
+  <xacro:property name="wheel_mass" value="3"/>
+  <xacro:property name="base_radius" value="0.1"/>
+  <xacro:property name="wheel_radius" value="0.03"/>
+
+  <!-- Inertial cuboid element -->
+  <!-- Same def that box primitive (center) -->
+  <xacro:macro name="cuboid_inertia_def" params="x y z mass">
+    <inertia iyy="${mass*(z*z+x*x)/12.0}" ixx="${mass*(y*y+z*z)/12.0}" izz="${mass*(x*x+y*y)/12.0}" ixy="0.0" iyz="0.0" ixz="0.0"/>
+  </xacro:macro>
+  <xacro:macro name="cylinder_inertia_def" params="r h mass">
+    <inertia ixx="${mass*(3*r*r+h*h)/12}" ixy="0" ixz="0" iyy="${mass*(3*r*r+h*h)/12}" iyz="0" izz="${mass*r*r/2}"/>
+  </xacro:macro>
+
+  <!-- Materials -->
+  <material name="DarkGrey">
+    <color rgba="0.3 0.3 0.3 1.0"/>
+  </material>
+  <material name="BrightWhite">
+    <color rgba="0.8 0.8 0.8 1.0"/>
+  </material>
+  <material name="GlassWhite">
+    <color rgba="1 1 1 1.0"/>
+  </material>
+  <material name="Pink">
+    <color rgba="1 0.3 0.3 1.0"/>
+  </material>
+  
+  <!-- Base footprint-->
+  <link name="base_link"/>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="base_footprint" />
+  </joint>
+  
+  <link name="base_footprint"/>
+
+  <joint name="vehicle_body_joint" type="fixed">
+    <origin
+        xyz="0 0 0.03"
+        rpy="0 0 0" />
+    <parent link="base_link"/>
+    <child link="vehicle_body"/>
+  </joint>
+
+  <!-- Vehicle body-->
+  <link name="vehicle_body">
+    <inertial>
+      <mass value="${base_mass}"/>
+      <origin rpy="0 0 0" xyz="0 0 0 "/>
+      <cuboid_inertia_def x="1.002" y="0.1" z="0.622" mass="${base_mass}"/><!-- Technically 0.367 -->
+    </inertial>
+    <visual>
+      <origin rpy="${PI/2} 0 ${PI/2}" xyz="0 0 0 "/>
+      <geometry>
+        <mesh filename="package://moying_mor_description/meshes/agv/MON0300-BODY.STL"/>
+      </geometry>
+      <material name="GlassWhite"/>
+    </visual>
+    <collision>
+      <origin rpy="${PI/2} 0 ${PI/2}" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://moying_mor_description/meshes/agv/MON0300-BODY.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <!-- Wheels -->rotation_degree
+  <!-- <xacro:macro name="moying_wheel" params="wheel_prefix *joint_pose">
+      <joint name="${wheel_prefix}_wheel_joint" type="$(arg wheel_joints_type)">
+        <xacro:insert_block name="joint_pose"/>
+        <axis xyz="0 0 -1"/>
+        <parent link="vehicle_body"/>
+        <child link="${wheel_prefix}_wheel"/>
+      </joint>
+      
+      <link name="${wheel_prefix}_wheel">
+        <inertial>
+          <mass value="${wheel_mass}" />
+          <cylinder_inertia_def r="0.13" h="0.08" mass="${wheel_mass}"/>
+        </inertial>
+        <visual>
+          <origin rpy="0 0 0" xyz="0 0 0 "/>
+          <geometry>
+            <cylinder radius="0.088" length="0.09"/>
+          </geometry>
+          <material name="Pink"/>
+        </visual>
+        <collision>
+          <origin rpy="0 0 0" xyz="0 0 0"/>
+          <geometry>
+            <cylinder radius="0.088" length="0.09"/>
+          </geometry>
+        </collision>
+      </link>
+      
+      <xacro:if value="${use_gazebo}">
+        <gazebo reference="${wheel_prefix}_wheel">
+          <visual>
+            <material>
+              <script>
+                <uri>file://media/materials/scripts/gazebo.material</uri>
+                <name>Gazebo/Red</name>
+              </script>
+            </material>
+          </visual>
+        </gazebo>
+      </xacro:if>
+  </xacro:macro> -->
+    <xacro:property name="wheel_radius" value="0.07625"/>
+    <xacro:property name="roller_radius" value="0.009"/>
+
+    <xacro:macro name="roller" params="prefix suffix theta roller_type">
+        <!-- rotation math: roller_joint_axis -->
+        <xacro:property name="sqrt_2_2" value="${sqrt(2)/2}"/>
+        <xacro:property name="roller_joint_axis_x" value="${cos(theta) * sqrt_2_2}"/>
+        <xacro:property name="roller_joint_axis_y" value="${-reflect * sqrt_2_2}"/>
+        <xacro:property name="roller_joint_axis_z" value="${sin(theta) * sqrt_2_2}"/>
+        <!-- rotation math: get quaternion between x_axis (1,0,0) and roller_joint_axis
+        https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another -->
+        <xacro:property name="quat_x" value="${0}"/>
+        <xacro:property name="quat_y" value="${roller_joint_axis_z}"/>
+        <xacro:property name="quat_z" value="${-roller_joint_axis_y}"/>
+        <xacro:property name="quat_w" value="${-(1+roller_joint_axis_x)}"/>
+        <xacro:property name="quat_length" value="${sqrt(quat_y*quat_y + quat_z * quat_z+quat_w * quat_w)}"/>
+        <xacro:property name="quat_normal_x" value="${0}"/>
+        <xacro:property name="quat_normal_y" value="${quat_y/quat_length}"/>
+        <xacro:property name="quat_normal_z" value="${quat_z/quat_length}"/>
+        <xacro:property name="quat_normal_w" value="${quat_w/quat_length}"/>
+
+        <!--  link  -->
+        <link name="${prefix}_roller_${suffix}">
+            <collision>
+                <xacro:if value="${roller_type=='realistic'}">
+                    <!--  quat_xyzw dosen't work ?! covert to rpy-->
+                    <origin rpy="${atan2(2. * (quat_normal_w * quat_normal_x + quat_normal_y * quat_normal_z),
+                              1. - 2. * (quat_normal_x * quat_normal_x + quat_normal_y * quat_normal_y))}
+                     ${asin(2. * (quat_normal_w * quat_normal_y - quat_normal_z * quat_normal_x))}
+                     ${atan2(2. * (quat_normal_w * quat_normal_z + quat_normal_x * quat_normal_y),
+                              1. - 2. * (quat_normal_y * quat_normal_y + quat_normal_z * quat_normal_z))}"
+                            xyz="0 0 0"/>
+                    <geometry>
+                        <mesh filename="package://rm_description/meshes/common/roller.stl" scale="0.001 0.001 0.001"/>
+                    </geometry>
+                </xacro:if>
+                <xacro:if value="${roller_type=='simple'}">
+                    <geometry>
+                        <sphere radius="${roller_radius}"/>
+                    </geometry>
+                </xacro:if>
+            </collision>
+            <inertial>
+                <mass value="0.036"/>
+                <inertia ixx="3128e-9" ixy="0.0" ixz="0.0" iyy="3128e-9" iyz="0.0" izz="3128e-9"/>
+            </inertial>
+        </link>
+
+        <joint name="${prefix}_roller_${suffix}_joint" type="continuous">
+            <origin
+                    xyz="${(wheel_radius-roller_radius)*cos(theta-pi/2)} 0 ${(wheel_radius-roller_radius)*sin(theta-pi/2)}"
+                    rpy="0 0 0"/>
+            <axis xyz="${roller_joint_axis_x} ${roller_joint_axis_y} ${roller_joint_axis_z}"/>
+            <dynamics damping="0.0" friction="0.001"/>
+            <parent link="${prefix}_wheel"/>
+            <child link="${prefix}_roller_${suffix}"/>
+        </joint>
+
+        <gazebo reference="${prefix}_roller_${suffix}">
+            <mu1 value="2000.0"/>
+            <mu2 value="2000.0"/>
+            <kp value="1000000.0"/>
+            <kd value="100.0"/>
+            <material>Gazebo/Black</material>
+        </gazebo>
+
+    </xacro:macro>
+
+    <xacro:macro name="moying_wheel"
+                 params="prefix connected_to wheel_x_offset wheel_y_offset wheel_z_offset reflect roller_type max_effort max_velocity">
+        <!--  link  -->
+        <link name="${prefix}_wheel">
+            <visual>
+                <geometry>
+                    <xacro:if value="${reflect == 1}">
+                        <mesh filename="package://rm_description/meshes/common/right_threaded_mecanum_wheel.stl"
+                              scale="0.001 0.001 0.001"/>
+                    </xacro:if>
+                    <xacro:if value="${reflect == -1}">
+                        <mesh filename="package://rm_description/meshes/common/left_threaded_mecanum_wheel.stl"
+                              scale="0.001 0.001 0.001"/>
+                    </xacro:if>
+                </geometry>
+            </visual>
+            <inertial>
+                <mass value="0.59"/>
+                <inertia ixx="1.416e-3" ixy="0.0" ixz="0.0" iyy="2.749e-3" iyz="0.0" izz="1.416e-3"/>
+            </inertial>
+        </link>
+
+        <!--  joint  -->
+        <joint name="${prefix}_wheel_joint" type="revolute">
+            <axis xyz="0 1 0"/>
+            <origin xyz="${wheel_x_offset} ${wheel_y_offset} ${wheel_offset_z}" rpy="0 0 0"/>
+            <!--      limit not work while type="continuous"-->
+            <limit effort="${max_effort}" velocity="${max_velocity}" lower="-1e9" upper="1e9"/>
+            <dynamics damping="0.0" friction="0.05"/>
+            <parent link="${connected_to}"/>
+            <child link="${prefix}_wheel"/>
+        </joint>
+
+        <xacro:unless value="${roller_type=='none'}">
+            <!-- 16 roller  2pi/16=0.393-->
+            <xacro:roller prefix="${prefix}" suffix="0" theta="${0*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="1" theta="${1*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="2" theta="${2*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="3" theta="${3*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="4" theta="${4*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="5" theta="${5*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="6" theta="${6*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="7" theta="${7*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="8" theta="${8*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="9" theta="${9*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="10" theta="${10*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="11" theta="${11*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="12" theta="${12*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="13" theta="${13*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="14" theta="${14*0.393}" roller_type="${roller_type}"/>
+            <xacro:roller prefix="${prefix}" suffix="15" theta="${15*0.393}" roller_type="${roller_type}"/>
+        </xacro:unless>
+
+    </xacro:macro>
+
+    <xacro:macro name="wheel_transmission" params="prefix mechanical_reduction">
+        <transmission name="${prefix}_wheel_trans">
+            <type>transmission_interface/SimpleTransmission</type>
+            <actuator name="${prefix}_wheel_motor">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+                <mechanicalReduction>${mechanical_reduction}</mechanicalReduction>
+            </actuator>
+            <joint name="${prefix}_wheel_joint">
+                <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+            </joint>
+        </transmission>
+  </xacro:macro>
+  
+  <xacro:moying_wheel prefix="left_front" connected_to="vehicle_body"
+                             wheel_x_offset="${wheel_track/2}" wheel_y_offset="${wheel_base/2}"
+                             wheel_z_offset="${wheel_offset_z}"
+                             reflect="1" roller_type="${roller_type}"
+                             max_effort="5" max_velocity="50"/>
+  <xacro:moying_wheel prefix="back_left" connected_to="vehicle_body"
+                             wheel_x_offset="${-wheel_track/2}" wheel_y_offset="${wheel_base/2}"
+                             wheel_z_offset="${wheel_offset_z}"
+                             reflect="1" roller_type="${roller_type}"
+                             max_effort="5" max_velocity="50"/>
+  <xacro:moying_wheel prefix="front_right" connected_to="vehicle_body"
+                             wheel_x_offset="${wheel_track/2}" wheel_y_offset="${-wheel_base/2}"
+                             wheel_z_offset="${wheel_offset_z}"
+                             reflect="1" roller_type="${roller_type}"
+                             max_effort="5" max_velocity="50"/>
+  <xacro:moying_wheel prefix="back_right" connected_to="vehicle_body"
+                             wheel_x_offset="${-wheel_track/2}" wheel_y_offset="${-wheel_base/2}"
+                             wheel_z_offset="${wheel_offset_z}"
+                             reflect="1" roller_type="${roller_type}"
+                             max_effort="5" max_velocity="50"/>
+  
+  <!-- Laser sensors-->
+  <joint name="front_mapping_frame" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="front_mapping_frame"/>
+    <origin rpy="${0} 0 ${0}" xyz="0.45 -0.259 0.1"/>
+  </joint>
+
+  <link name="front_mapping_frame"/>
+
+  <joint name="front_laser_joint" type="fixed">
+    <parent link="vehicle_body"/>
+    <child link="front_laser"/>
+    <origin rpy="${pi} 0 ${-pi/4.0}" xyz="0.45 -0.259 0.1321"/>
+  </joint>
+
+  <link name="front_laser">
+    <visual>
+      <geometry>
+        <mesh filename="package://sick_tim/meshes/sick_tim551.stl" />
+      </geometry>
+      <material name="blue" >
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>
+  </link>
+  
+  <xacro:if value="${use_gazebo}">
+    <gazebo reference="front_laser">
+      <visual>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Blue</name>
+          </script>
+        </material>
+      </visual>
+    </gazebo>
+  </xacro:if>
+
+  <joint name="back_laser_joint" type="fixed">
+    <parent link="vehicle_body"/>
+    <child link="back_laser"/>
+    <origin rpy="${pi} 0 ${pi/4.0*3}" xyz="-0.45 0.259 0.1321"/>
+  </joint>
+
+  <link name="back_laser">
+    <visual>
+      <geometry>
+        <mesh filename="package://sick_tim/meshes/sick_tim551.stl" />
+      </geometry>
+      <material name="blue" >
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>
+  </link>
+  
+  <xacro:if value="${use_gazebo}">
+    <gazebo reference="back_laser">
+      <visual>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Blue</name>
+          </script>
+        </material>
+      </visual>
+    </gazebo>
+  </xacro:if>
+  
+  <!-- IMU link -->
+  <joint name="imu_link_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.15"/>
+  </joint>
+  
+  <link name="imu_link"/>
+
+  <!-- Attach the RealSense D435 -->
+  <sensor_d435 parent="vehicle_body" name="front_camera">
+      <origin xyz="0.47765 0 0.3325" rpy="0 0 0"/>
+  </sensor_d435>
+  <sensor_d435 parent="vehicle_body" name="back_camera">
+      <origin xyz="-0.47765 0 0.3325" rpy="0 0 ${pi}"/>
+  </sensor_d435>
+
+  <xacro:if value="${use_gazebo}">
+    <xacro:include filename="$(find moying_mor_description)/urdf/MON300.gazebo" />
+  </xacro:if>
+</robot>
